@@ -17,8 +17,15 @@ This creates values, but sectioned into own section tables if a section comment 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | controller.ingressClass | string | `"nginx"` | You can also specify value comments like this |
-| controller.publishService | object | `{"enabled":false}` | This is a publishService |
+| controller.publishService | object | <pre lang="yaml">enabled: false</pre> | This is a publishService |
 | controller.replicas | int | `nil` | Number of nginx-ingress pods to load balance between |
+| ingress.host | string | `""` | Overrides the inherited section |
+
+### Inherited Section
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| ingress.enabled | bool | `false` | Inherits "Inherited Section" from the parent key |
 
 ### Other Values
 
@@ -92,10 +99,8 @@ the chart will construct this list internally unless specified
 		<tr>
 			<td>controller.publishService</td>
 			<td>object</td>
-			<td><pre lang="json">
-{
-  "enabled": false
-}
+			<td><pre lang="yaml">
+enabled: false
 </pre>
 </td>
 			<td>This is a publishService</td>
@@ -108,6 +113,35 @@ null
 </pre>
 </td>
 			<td>Number of nginx-ingress pods to load balance between</td>
+		</tr>
+		<tr>
+			<td>ingress.host</td>
+			<td>string</td>
+			<td><pre lang="json">
+""
+</pre>
+</td>
+			<td>Overrides the inherited section</td>
+		</tr>
+	</tbody>
+</table>
+<h3>Inherited Section</h3>
+<table>
+	<thead>
+		<th>Key</th>
+		<th>Type</th>
+		<th>Default</th>
+		<th>Description</th>
+	</thead>
+	<tbody>
+		<tr>
+			<td>ingress.enabled</td>
+			<td>bool</td>
+			<td><pre lang="json">
+false
+</pre>
+</td>
+			<td>Inherits "Inherited Section" from the parent key</td>
 		</tr>
 	</tbody>
 </table>

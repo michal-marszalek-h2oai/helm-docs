@@ -8,6 +8,17 @@ const (
 	PrefixComment = "# --"
 )
 
+// ParseSection returns the value of the last `# @section --` line, or "" if there is none.
+func ParseSection(commentLines []string) string {
+	section := ""
+	for _, line := range commentLines {
+		if match := sectionRegex.FindStringSubmatch(line); len(match) > 1 {
+			section = match[1]
+		}
+	}
+	return section
+}
+
 func ParseComment(commentLines []string) (string, ChartValueDescription) {
 	var valueKey string
 	var c ChartValueDescription
@@ -44,16 +55,14 @@ func ParseComment(commentLines []string) (string, ChartValueDescription) {
 		c.Description = valueTypeMatch[2]
 	}
 
-	var isRaw = false
-
 	for _, line := range commentLines[docStartIdx+1:] {
 		rawFlagMatch := rawDescriptionRegex.FindStringSubmatch(line)
 		defaultCommentMatch := defaultValueRegex.FindStringSubmatch(line)
 		notationTypeCommentMatch := valueNotationTypeRegex.FindStringSubmatch(line)
 		sectionCommentMatch := sectionRegex.FindStringSubmatch(line)
 
-		if !isRaw && len(rawFlagMatch) == 1 {
-			isRaw = true
+		// @raw is accepted for older charts but no longer changes anything
+		if len(rawFlagMatch) == 1 {
 			continue
 		}
 
@@ -72,19 +81,9 @@ func ParseComment(commentLines []string) (string, ChartValueDescription) {
 			continue
 		}
 
-		commentContinuationMatch := commentContinuationRegex.FindStringSubmatch(line)
-
-		if isRaw {
-
-			if len(commentContinuationMatch) > 1 {
-				c.Description += "\n" + commentContinuationMatch[2]
-			}
-			continue
-		} else {
-			if len(commentContinuationMatch) > 1 {
-				c.Description += " " + commentContinuationMatch[2]
-			}
-			continue
+		// every comment line is its own line
+		if commentContinuationMatch := commentContinuationRegex.FindStringSubmatch(line); len(commentContinuationMatch) > 1 {
+			c.Description += "\n" + commentContinuationMatch[2]
 		}
 	}
 	return valueKey, c

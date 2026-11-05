@@ -405,7 +405,7 @@ inside the chart, you can change the contents of the column like so:
 ```yaml
 service:
   # -- Add annotations to the service, this is going to be a long comment across multiple lines
-  # but that's fine, these will be concatenated and the @default will be rendered as the default for this field
+  # each line is rendered on its own line, and the @default will be rendered as the default for this field
   # @default -- the chart will add some internal annotations automatically
   annotations: []
 ```
@@ -422,6 +422,52 @@ In cases you would like to ignore certain values, you can mark it with @ignored 
 service:
   port: 8080
 ```
+
+### Sections
+Mark a value with `# @section -- Name` to render it in its own table under that heading. A section set on a parent key
+is inherited by all of its children, and a child can override it with its own `@section`:
+
+```yaml
+# @section -- Ingress
+ingress:
+  # -- Enable ingress
+  enabled: false
+  # -- Hostname
+  # @section -- Networking
+  host: ""
+```
+
+See [here](./example-charts/sections/values.yaml) for an example.
+
+### Multiline descriptions and code snippets
+Every comment line of a description is rendered on its own line. In the markdown values table, line breaks are
+rendered as `<br>` and ```` ``` ```` code fences as `<pre>` blocks, so the whole description stays in one table cell
+(`|` and HTML characters inside a fence are escaped). A bare `|` outside a fence still ends the cell. To keep a long
+sentence on one line in the table, keep it on one comment line.
+
+```yaml
+# -- Extra annotations for the pod
+# Shown on a second line in the table.
+# ```yaml
+# podAnnotations:
+#   example.com/script: |
+#     echo hello
+# ```
+podAnnotations: {}
+```
+
+`# @raw` is still accepted for older charts, but it is no longer needed.
+
+See [here](./example-charts/multiline-description/values.yaml) for an example.
+
+Non-empty object and list defaults are rendered the same way, as a YAML `<pre>` block in the Default column
+(e.g. `{"enabled":false}` becomes `enabled: false`). Scalars, `{}` and `[]` stay inline.
+
+If your own template writes value rows into a markdown table itself, pipe the fields through the same functions, or a
+multiline description will end the row: `{{ .Description | toMdTableCell }}`, `{{ .Default | toMdDefault }}`.
+
+The HTML values table (`chart.valuesSectionHtml`) renders descriptions and object/list defaults the same way
+(`|` inside a fence is not escaped there, since it cannot end an HTML cell).
 
 ### Spaces and Dots in keys
 In the old-style comment, if a key name contains any "." or " " characters, that section of the path must be quoted in

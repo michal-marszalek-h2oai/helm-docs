@@ -1302,7 +1302,7 @@ animals:
 	assert.Equal(t, "The list of cats that _I_ own", valuesRows[0].AutoDefault)
 	assert.Equal(t, "", valuesRows[0].Default)
 	assert.Equal(t, "", valuesRows[0].Description)
-	assert.Equal(t, "The best kind of animal probably, allow me to list their many varied benefits. Cats are very funny, and quite friendly, in almost all cases", valuesRows[0].AutoDescription)
+	assert.Equal(t, "The best kind of animal probably, allow me to list their many varied benefits.\nCats are very funny, and quite friendly, in almost all cases", valuesRows[0].AutoDescription)
 }
 
 func TestAutoMultilineDescriptionWithoutValue(t *testing.T) {
@@ -1468,6 +1468,25 @@ animals:
 	assert.Equal(t, "I mean, dogs are quite nice too...\n\nList of default dogs:\n - Umbra\n - Penumbra\n - Somnus\n", valuesRows[0].Description)
 }
 
+func TestEveryLineBreaks(t *testing.T) {
+	helmValues := parseYamlValues(`
+db:
+  # -- (string) Postgresql user password.
+  # @default -- global.adminPassword
+  # Generated on first install.
+  password: x
+`)
+
+	valuesRows, err := getSortedValuesTableRows(helmValues, make(map[string]helm.ChartValueDescription))
+
+	assert.Nil(t, err)
+	assert.Len(t, valuesRows, 1)
+	assert.Equal(t, "db.password", valuesRows[0].Key)
+	assert.Equal(t, stringType, valuesRows[0].Type)
+	assert.Equal(t, "global.adminPassword", valuesRows[0].AutoDefault)
+	assert.Equal(t, "Postgresql user password.\nGenerated on first install.", valuesRows[0].AutoDescription)
+}
+
 func TestExtractValueNotationType(t *testing.T) {
 	helmValues := parseYamlValues(`
 animals:
@@ -1585,6 +1604,100 @@ animals:
 	assert.Equal(t, "animals.lion", valuesRows[1].Key)
 	assert.Equal(t, "This describes a lion", valuesRows[1].AutoDescription)
 	assert.Equal(t, "Feline Section", valuesRows[1].Section)
+}
+
+func TestSectionInheritedFromParent(t *testing.T) {
+	helmValues := parseYamlValues(`
+# @section -- Ingress
+ingress:
+  # -- Enable ingress
+  enabled: false
+  # -- Ingress class name
+  className: ""
+  # -- Hostname
+  host: ""
+`)
+
+	valuesRows, err := getSortedValuesTableRows(helmValues, make(map[string]helm.ChartValueDescription))
+
+	assert.Nil(t, err)
+	assert.Len(t, valuesRows, 3)
+	for _, row := range valuesRows {
+		assert.Equal(t, "Ingress", row.Section, row.Key)
+	}
+}
+
+func TestSectionInheritanceOverrideAndNesting(t *testing.T) {
+	helmValues := parseYamlValues(`
+other:
+  # -- Not under any section
+  value: 1
+# @section -- Parent
+parent:
+  # -- Overrides the parent section
+  # @section -- Child
+  child: 1
+  nested:
+    # -- Inherits from grandparent
+    grandchild: 2
+  # @section -- Nested
+  override:
+    # -- Inherits from nearest ancestor
+    leaf: 3
+  list:
+    # -- Inherits through a list item
+    - item: 4
+`)
+
+	valuesRows, err := getSortedValuesTableRows(helmValues, make(map[string]helm.ChartValueDescription))
+
+	assert.Nil(t, err)
+	sections := make(map[string]string)
+	for _, row := range valuesRows {
+		sections[row.Key] = row.Section
+	}
+	assert.Equal(t, map[string]string{
+		"other.value":              "",
+		"parent.child":             "Child",
+		"parent.nested.grandchild": "Parent",
+		"parent.override.leaf":     "Nested",
+		"parent.list[0]":           "Parent",
+	}, sections)
+}
+
+func TestSectionInheritedFromDocumentedParent(t *testing.T) {
+	helmValues := parseYamlValues(`
+# -- Ingress settings
+# @section -- Ingress
+ingress:
+  # -- Enable ingress
+  enabled: false
+`)
+
+	valuesRows, err := getSortedValuesTableRows(helmValues, make(map[string]helm.ChartValueDescription))
+
+	assert.Nil(t, err)
+	assert.Len(t, valuesRows, 2)
+	for _, row := range valuesRows {
+		assert.Equal(t, "Ingress", row.Section, row.Key)
+	}
+}
+
+func TestSectionInheritedFromParentWithOldStyleComment(t *testing.T) {
+	helmValues := parseYamlValues(`
+## -- Keycloak authentication parameters
+# @section -- Auth
+auth:
+  # -- Existing secret name
+  existingSecret: ""
+`)
+
+	valuesRows, err := getSortedValuesTableRows(helmValues, make(map[string]helm.ChartValueDescription))
+
+	assert.Nil(t, err)
+	assert.Len(t, valuesRows, 1)
+	assert.Equal(t, "auth.existingSecret", valuesRows[0].Key)
+	assert.Equal(t, "Auth", valuesRows[0].Section)
 }
 
 func TestSectionWithAnnotations(t *testing.T) {
