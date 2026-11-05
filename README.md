@@ -463,6 +463,9 @@ See [here](./example-charts/multiline-description/values.yaml) for an example.
 Non-empty object and list defaults are rendered the same way, as a YAML `<pre>` block in the Default column
 (e.g. `{"enabled":false}` becomes `enabled: false`). Scalars, `{}` and `[]` stay inline.
 
+If your own template writes value rows into a markdown table itself, pipe the fields through the same functions, or a
+multiline description will end the row: `{{ .Description | toMdTableCell }}`, `{{ .Default | toMdDefault }}`.
+
 The HTML values table (`chart.valuesSectionHtml`) renders descriptions and object/list defaults the same way
 (`|` inside a fence is not escaped there, since it cannot end an HTML cell).
 

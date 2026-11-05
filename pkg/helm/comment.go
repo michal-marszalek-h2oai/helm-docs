@@ -55,16 +55,14 @@ func ParseComment(commentLines []string) (string, ChartValueDescription) {
 		c.Description = valueTypeMatch[2]
 	}
 
-	var isRaw = false
-
 	for _, line := range commentLines[docStartIdx+1:] {
 		rawFlagMatch := rawDescriptionRegex.FindStringSubmatch(line)
 		defaultCommentMatch := defaultValueRegex.FindStringSubmatch(line)
 		notationTypeCommentMatch := valueNotationTypeRegex.FindStringSubmatch(line)
 		sectionCommentMatch := sectionRegex.FindStringSubmatch(line)
 
-		if !isRaw && len(rawFlagMatch) == 1 {
-			isRaw = true
+		// @raw is accepted for older charts but no longer changes anything
+		if len(rawFlagMatch) == 1 {
 			continue
 		}
 
@@ -83,11 +81,10 @@ func ParseComment(commentLines []string) (string, ChartValueDescription) {
 			continue
 		}
 
-		// every comment line is its own line; @raw is accepted but no longer changes anything
+		// every comment line is its own line
 		if commentContinuationMatch := commentContinuationRegex.FindStringSubmatch(line); len(commentContinuationMatch) > 1 {
 			c.Description += "\n" + commentContinuationMatch[2]
 		}
 	}
 	return valueKey, c
 }
-

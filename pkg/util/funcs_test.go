@@ -14,6 +14,7 @@ func TestToMdTableCell(t *testing.T) {
 		"no lang":      {"```\n<b> & c\n```", "<pre>&lt;b&gt; &amp; c</pre>"},
 		"two fences":   {"```sh\nls\n```\n```sh\npwd\n```", "<pre lang=\"sh\">ls</pre><br><pre lang=\"sh\">pwd</pre>"},
 		"unterminated": {"```yaml\na: 1", "```yaml<br>a: 1"},
+		"md chars":     {"```\nls **/*_x `a` \\|\n```", "<pre>ls &#42;&#42;/&#42;&#95;x &#96;a&#96; &#92;\\|</pre>"},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -32,6 +33,7 @@ func TestToMdDefault(t *testing.T) {
 		"not backticks": {"{\"a\":1}", "{\"a\":1}"},
 		"big int":       {"`{\"count\":1000000}`", "<pre lang=\"yaml\">count: 1000000</pre>"},
 		"escaping":      {"`{\"s\":\"a|<b>\"}`", "<pre lang=\"yaml\">s: a\\|&lt;b&gt;</pre>"},
+		"md chars":      {"`[\"*.example.com\",\"*.test.com\"]`", "<pre lang=\"yaml\">- &#39;&#42;.example.com&#39;<br>- &#39;&#42;.test.com&#39;</pre>"},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {

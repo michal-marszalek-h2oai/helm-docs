@@ -59,13 +59,16 @@ func toMdTableCell(s string) string { return toTableCell(s, true) }
 // toHtmlTableCell is toMdTableCell for an HTML table, where markdown escapes like \| are not processed.
 func toHtmlTableCell(s string) string { return toTableCell(s, false) }
 
-func toTableCell(s string, escapePipe bool) string {
+// mdCodeEscaper keeps code literal in a markdown table cell: text inside <pre> is still parsed as markdown there,
+// so * _ ` \ would turn into emphasis/code spans, and a bare | (e.g. YAML block scalar) would end the cell.
+var mdCodeEscaper = strings.NewReplacer("\\", "&#92;", "|", "\\|", "*", "&#42;", "_", "&#95;", "`", "&#96;")
+
+func toTableCell(s string, markdown bool) string {
 	s = codeFenceRegex.ReplaceAllStringFunc(s, func(block string) string {
 		m := codeFenceRegex.FindStringSubmatch(block)
 		code := html.EscapeString(m[2])
-		if escapePipe {
-			// a bare | (e.g. YAML block scalar) would end the markdown table cell
-			code = strings.ReplaceAll(code, "|", "\\|")
+		if markdown {
+			code = mdCodeEscaper.Replace(code)
 		}
 		if m[1] == "" {
 			return "<pre>" + code + "</pre>"
